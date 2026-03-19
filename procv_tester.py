@@ -663,6 +663,7 @@ ui.run(
     favicon="⚡",
     dark=True,
     reload=False,
+    show=False,
     storage_secret=STORAGE_SECRET,
     uvicorn_kwargs={
         "timeout_keep_alive": 120,
