@@ -664,4 +664,9 @@ ui.run(
     dark=True,
     reload=False,
     storage_secret=STORAGE_SECRET,
+    uvicorn_kwargs={
+        "timeout_keep_alive": 120,
+        "ws_ping_interval": 30,
+        "ws_ping_timeout": 60,
+    }
 )
