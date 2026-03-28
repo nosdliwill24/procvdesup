@@ -659,15 +659,10 @@ def admin_page():
 ui.run(
     host="0.0.0.0",
     port=int(os.environ.get("PORT", 8080)),
-    title="PROCV — Comparador de Listas",
+    title="PROCV – Comparador de Listas",
     favicon="⚡",
     dark=True,
     reload=False,
     show=False,
     storage_secret=STORAGE_SECRET,
-    uvicorn_kwargs={
-        "timeout_keep_alive": 120,
-        "ws_ping_interval": 30,
-        "ws_ping_timeout": 60,
-    }
 )
