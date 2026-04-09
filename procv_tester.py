@@ -1,6 +1,6 @@
 """
-PROCV — Comparador de Listas
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROCV — Comparador de Listas + Toolkit de Texto
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Instalação:
     pip install nicegui httpx
 
@@ -15,6 +15,12 @@ Nomes inteligentes com IA (opcional):
     Defina a variável de ambiente ANTHROPIC_API_KEY
     para ativar geração automática de nomes com gênero correto em PT-BR.
     Sem ela, o sistema usa um template padrão limpo.
+
+Abas disponíveis:
+    ⚡  PROCV        — Comparador de listas
+    ✂️  Extrator     — Extrai valor entre vírgulas (ex: 99999,0319,99999 → 0319)
+    0   Zero         — Adiciona ou remove o 0 inicial de números
+    📵  DDI 55       — Remove o prefixo 55 de números brasileiros
 """
 
 import json
@@ -26,9 +32,9 @@ from nicegui import ui, app
 # ╔══════════════════════════════════════════════╗
 # ║  CONFIGURAÇÃO — edite antes de distribuir    ║
 # ╚══════════════════════════════════════════════╝
-ADMIN_PASSWORD    = "procv@admin2024"         # ← MUDE ESTA SENHA
+ADMIN_PASSWORD    = "procv@admin2024"          # ← MUDE ESTA SENHA
 HISTORY_FILE      = "procv_historico.json"
-STORAGE_SECRET    = "procv-chave-secreta-001" # ← pode mudar também
+STORAGE_SECRET    = "procv-chave-secreta-001"  # ← pode mudar também
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 
@@ -54,7 +60,7 @@ def append_history(entry: dict):
 
 
 # ══════════════════════════════════════════════
-#  UTILITÁRIOS — comparação
+#  UTILITÁRIOS — comparação (PROCV)
 # ══════════════════════════════════════════════
 
 def parse_list(text: str) -> list:
@@ -77,7 +83,67 @@ def comparar(text_a: str, text_b: str) -> dict:
 
 
 # ══════════════════════════════════════════════
-#  GERAÇÃO INTELIGENTE DE TÍTULOS
+#  UTILITÁRIOS — ferramentas de texto/número
+# ══════════════════════════════════════════════
+
+def extrair_virgula(text: str) -> tuple[list, list]:
+    """
+    Extrai o valor entre vírgulas de cada linha.
+    Ex: "99999,0319,99999" → "0319"
+    Retorna (resultados, linhas_com_erro).
+    """
+    resultados = []
+    erros = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(",")
+        if len(parts) >= 2:
+            resultados.append(parts[1].strip())
+        else:
+            erros.append(line)
+    return resultados, erros
+
+
+def processar_zero(text: str, modo: str) -> list:
+    """
+    modo='add' → adiciona 0 no início de cada número.
+    modo='rem' → remove o 0 inicial (se houver).
+    """
+    resultados = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if modo == "add":
+            resultados.append("0" + line)
+        else:
+            resultados.append(line[1:] if line.startswith("0") else line)
+    return resultados
+
+
+def remover_ddi55(text: str) -> tuple[list, int]:
+    """
+    Remove o prefixo 55 de números brasileiros.
+    Retorna (resultados, qtd_sem_55).
+    """
+    resultados = []
+    sem_55 = 0
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("55"):
+            resultados.append(line[2:])
+        else:
+            resultados.append(line)
+            sem_55 += 1
+    return resultados, sem_55
+
+
+# ══════════════════════════════════════════════
+#  GERAÇÃO INTELIGENTE DE TÍTULOS (PROCV)
 # ══════════════════════════════════════════════
 
 async def gerar_titulos(nome_a: str, nome_b: str) -> tuple:
@@ -159,7 +225,6 @@ GLOBAL_CSS = """
     --hist-bg:      rgba(255,255,255,0.02);
     --scrollbar:    rgba(255,255,255,0.08);
     --toggle-bg:    rgba(255,255,255,0.06);
-    --toggle-icon:  '☀️';
   }
 
   /* ── LIGHT ── */
@@ -214,6 +279,7 @@ GLOBAL_CSS = """
 
   .page-wrap { position: relative; z-index: 1; }
 
+  /* ── TOP BAR ── */
   .top-bar {
     position: sticky; top: 0; z-index: 200;
     backdrop-filter: blur(20px) saturate(1.4);
@@ -231,6 +297,33 @@ GLOBAL_CSS = """
   }
   .top-logo-text { color: var(--text); font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
 
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px;
+  }
+  body.light .nav-tabs { background: rgba(0,0,0,0.04); }
+
+  .nav-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px;
+    border: none; background: transparent;
+    color: var(--text-muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .nav-tab.active-procv  { background: rgba(59,130,246,0.15);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+  .nav-tab.active-ext    { background: rgba(96,165,250,0.12);  color: #7dd3fc; border: 1px solid rgba(96,165,250,0.22); }
+  .nav-tab.active-zero   { background: rgba(16,185,129,0.13);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+  .nav-tab.active-ddi    { background: rgba(239,68,68,0.13);   color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+  body.light .nav-tab:hover { background: rgba(0,0,0,0.05); }
+
   /* ── Toggle Button ── */
   .theme-toggle {
     width: 36px; height: 36px; border-radius: 50%;
@@ -244,6 +337,7 @@ GLOBAL_CSS = """
   }
   .theme-toggle:hover { transform: rotate(20deg); border-color: var(--border-hover) !important; }
 
+  /* ── GLASS CARD ── */
   .glass-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -251,6 +345,23 @@ GLOBAL_CSS = """
     transition: border-color 0.25s, background 0.3s;
   }
   .glass-card:hover { border-color: var(--border-hover); }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    background: rgba(59,130,246,0.07);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 12px; color: #7dd3fc;
+    line-height: 1.6; margin-bottom: 20px;
+  }
+  .info-box b { color: #93c5fd; }
+  .info-box code {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  body.light .info-box { background: rgba(37,99,235,0.06); border-color: rgba(37,99,235,0.2); color: #1d4ed8; }
+  body.light .info-box b { color: #1e40af; }
 
   /* ── Quasar field overrides ── */
   .q-field__control { background: var(--input-bg) !important; transition: background 0.3s; }
@@ -287,6 +398,7 @@ GLOBAL_CSS = """
   }
   .btn-copy:hover { background: rgba(59,130,246,0.18) !important; }
 
+  /* ── PROCV button ── */
   .procv-btn-wrap { display: flex; justify-content: center; margin: 40px 0 4px; }
   .btn-procv {
     background: linear-gradient(135deg, #1d4ed8 0%, #0369a1 50%, #0e7490 100%) !important;
@@ -302,7 +414,53 @@ GLOBAL_CSS = """
   .btn-procv:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 40px rgba(29,78,216,0.55) !important; }
   .btn-procv:active { transform: translateY(0) !important; }
 
-  /* ── Result cards ── */
+  /* ── TOOLKIT buttons ── */
+  .btn-ext {
+    background: linear-gradient(135deg, #1d4ed8, #0891b2) !important;
+    color: #fff !important; border: none !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    border-radius: 10px !important; padding: 10px 22px !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 4px 18px rgba(29,78,216,0.3) !important;
+    transition: all 0.2s !important;
+  }
+  .btn-ext:hover { transform: translateY(-1px) !important; filter: brightness(1.1) !important; }
+
+  .btn-add-zero {
+    background: linear-gradient(135deg, #059669, #0891b2) !important;
+    color: #fff !important; border: none !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    border-radius: 10px !important; padding: 10px 22px !important;
+    box-shadow: 0 4px 18px rgba(5,150,105,0.3) !important;
+    transition: all 0.2s !important;
+  }
+  .btn-add-zero:hover { transform: translateY(-1px) !important; filter: brightness(1.1) !important; }
+
+  .btn-rem-zero {
+    background: linear-gradient(135deg, #d97706, #0891b2) !important;
+    color: #fff !important; border: none !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    border-radius: 10px !important; padding: 10px 22px !important;
+    box-shadow: 0 4px 18px rgba(217,119,6,0.3) !important;
+    transition: all 0.2s !important;
+  }
+  .btn-rem-zero:hover { transform: translateY(-1px) !important; filter: brightness(1.1) !important; }
+
+  .btn-ddi {
+    background: linear-gradient(135deg, #dc2626, #ea580c) !important;
+    color: #fff !important; border: none !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 12px !important; font-weight: 700 !important;
+    border-radius: 10px !important; padding: 10px 22px !important;
+    box-shadow: 0 4px 18px rgba(220,38,38,0.3) !important;
+    transition: all 0.2s !important;
+  }
+  .btn-ddi:hover { transform: translateY(-1px) !important; filter: brightness(1.1) !important; }
+
+  /* ── Result cards (PROCV) ── */
   .res-card {
     flex: 1; border-radius: 4px; padding: 20px 28px;
     background: var(--bg-card);
@@ -319,6 +477,38 @@ GLOBAL_CSS = """
   .res-list { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--field-text); padding-left: 6px; }
   .res-item { display: block; line-height: 1.9; padding: 1px 0; }
 
+  /* ── Toolkit result card ── */
+  .toolkit-result {
+    margin-top: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: fadeInUp 0.3s ease;
+  }
+  .toolkit-result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  .toolkit-result-body {
+    padding: 14px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.9;
+    color: var(--field-text);
+    max-height: 320px; overflow-y: auto;
+    word-break: break-all;
+  }
+  .toolkit-result-body::-webkit-scrollbar { width: 4px; }
+  .toolkit-result-body::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 2px; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Badges ── */
   .stat-badge {
     display: inline-flex; align-items: center; gap: 7px;
     background: var(--hist-bg); border: 1px solid var(--border);
@@ -326,9 +516,32 @@ GLOBAL_CSS = """
   }
   .stat-badge b { color: var(--text); font-weight: 700; }
 
+  .count-badge {
+    font-size: 11px; color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px;
+  }
+
+  .res-label-ext  { font-size: 12px; font-weight: 700; color: #7dd3fc; letter-spacing: 0.8px; }
+  .res-label-add  { font-size: 12px; font-weight: 700; color: #6ee7b7; letter-spacing: 0.8px; }
+  .res-label-rem  { font-size: 12px; font-weight: 700; color: #fcd34d; letter-spacing: 0.8px; }
+  .res-label-ddi  { font-size: 12px; font-weight: 700; color: #fca5a5; letter-spacing: 0.8px; }
+
+  /* ── Warning tag ── */
+  .warn-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #fcd34d;
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 6px; padding: 4px 10px;
+    margin-top: 8px;
+  }
+
   .empty-state { color: var(--empty-color); font-size: 13px; font-style: italic; display: flex; align-items: center; gap: 8px; padding: 8px 0; }
   .loading-row { display: flex; align-items: center; gap: 12px; color: var(--loading-color); font-size: 14px; padding: 24px 0; }
 
+  /* ── Admin / Login ── */
   .login-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 40px; max-width: 380px; width: 100%; }
   .hist-row { background: var(--hist-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin-bottom: 10px; transition: border-color 0.2s; }
   .hist-row:hover { border-color: var(--border-hover); }
@@ -345,6 +558,15 @@ GLOBAL_CSS = """
 
 
 # ══════════════════════════════════════════════
+#  HELPERS JS — copiar para clipboard
+# ══════════════════════════════════════════════
+
+def js_copy(items: list) -> str:
+    text = "\n".join(items)
+    return f'navigator.clipboard.writeText({json.dumps(text)})'
+
+
+# ══════════════════════════════════════════════
 #  PÁGINA PRINCIPAL
 # ══════════════════════════════════════════════
 
@@ -354,17 +576,42 @@ def main_page():
 
     with ui.column().classes("page-wrap w-full"):
 
+        # ── Top Bar ──────────────────────────────────
         with ui.element('div').classes("top-bar w-full"):
             with ui.row().classes("items-center gap-3"):
                 ui.html('<div class="top-logo-icon">⚡</div>')
-                ui.html('<div class="top-logo-text">PROCV</div>')
-            toggle_btn = ui.button("☀️").classes("theme-toggle")
+                ui.html('<div class="top-logo-text">PROCV <span style="font-weight:400;color:#475569">Toolkit</span></div>')
 
-        with ui.column().classes("w-full").style(
+            with ui.row().classes("items-center gap-3"):
+                # Nav tabs
+                with ui.element('div').classes("nav-tabs"):
+                    tab_procv = ui.button("⚡ PROCV").classes("nav-tab active-procv")
+                    tab_ext   = ui.button("✂️ Extrator").classes("nav-tab")
+                    tab_zero  = ui.button("0  +/- Zero").classes("nav-tab")
+                    tab_ddi   = ui.button("📵 DDI 55").classes("nav-tab")
+                toggle_btn = ui.button("☀️").classes("theme-toggle")
+
+        # ── Panels container ──────────────────────────
+        main_content = ui.column().classes("w-full").style(
             "padding: 44px 40px; max-width: 1380px; margin: 0 auto;"
-        ):
-            with ui.row().classes("w-full items-start gap-5 mb-2"):
+        )
 
+        # ══════════════════════════════════════════════
+        #  PANEL — PROCV
+        # ══════════════════════════════════════════════
+        with main_content:
+            panel_procv = ui.column().classes("w-full")
+            panel_ext   = ui.column().classes("w-full")
+            panel_zero  = ui.column().classes("w-full")
+            panel_ddi   = ui.column().classes("w-full")
+
+            panel_ext.set_visibility(False)
+            panel_zero.set_visibility(False)
+            panel_ddi.set_visibility(False)
+
+        # ── PROCV content ─────────────────────────────
+        with panel_procv:
+            with ui.row().classes("w-full items-start gap-5 mb-2"):
                 with ui.column().classes("flex-1 glass-card gap-5"):
                     nome_a = (
                         ui.input(label=" ")
@@ -377,7 +624,6 @@ def main_page():
                         .props("outlined")
                         .style("min-height:260px;")
                     )
-
                 with ui.column().classes("flex-1 glass-card gap-5"):
                     nome_b = (
                         ui.input(label=" ")
@@ -393,10 +639,104 @@ def main_page():
 
             with ui.element('div').classes("procv-btn-wrap w-full"):
                 with ui.row().classes("items-center gap-4"):
-                    btn_clear = ui.button("✕  Limpar tudo").classes("action-btn btn-clear")
-                    btn = ui.button("⚡  PROCV").classes("btn-procv")
+                    btn_procv_clear = ui.button("✕  Limpar tudo").classes("action-btn btn-clear")
+                    btn_procv = ui.button("⚡  PROCV").classes("btn-procv")
 
-            result_area = ui.column().classes("w-full")
+            procv_result_area = ui.column().classes("w-full")
+
+        # ── EXTRATOR content ──────────────────────────
+        with panel_ext:
+            ui.html(
+                '<div class="info-box">'
+                '<b>Como funciona:</b> Cole seus dados abaixo. O sistema extrai o valor '
+                'entre as vírgulas de cada linha.<br>'
+                'Ex: <code>99999,0319,99999</code> → <b>0319</b>'
+                '</div>'
+            )
+            with ui.column().classes("glass-card w-full gap-4"):
+                ui.html('<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;">Dados de entrada</div>')
+                ext_input = (
+                    ui.textarea(label=" ")
+                    .classes("w-full list-area")
+                    .props("outlined")
+                    .style("min-height:220px;")
+                )
+                ext_input.props('placeholder="Cole aqui seus dados, um por linha...\nEx: 99999,0319,99999"')
+                with ui.row().classes("items-center gap-3"):
+                    btn_ext_run   = ui.button("✂️  Extrair").classes("btn-ext")
+                    btn_ext_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+            ext_result_area = ui.column().classes("w-full")
+
+        # ── ZERO content ──────────────────────────────
+        with panel_zero:
+            ui.html(
+                '<div class="info-box">'
+                '<b>Adicionar 0:</b> <code>31996070871</code> → <b>031996070871</b><br>'
+                '<b>Remover 0:</b> <code>031996070871</code> → <b>31996070871</b>'
+                '</div>'
+            )
+            with ui.column().classes("glass-card w-full gap-4"):
+                ui.html('<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;">Números</div>')
+                zero_input = (
+                    ui.textarea(label=" ")
+                    .classes("w-full list-area")
+                    .props("outlined")
+                    .style("min-height:220px;")
+                )
+                zero_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 31996070871"')
+                with ui.row().classes("items-center gap-3"):
+                    btn_add_zero  = ui.button("➕  Adicionar 0").classes("btn-add-zero")
+                    btn_rem_zero  = ui.button("➖  Remover 0").classes("btn-rem-zero")
+                    btn_zero_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+            zero_result_area = ui.column().classes("w-full")
+
+        # ── DDI 55 content ────────────────────────────
+        with panel_ddi:
+            ui.html(
+                '<div class="info-box">'
+                '<b>Como funciona:</b> Remove o prefixo 55 do início de números brasileiros.<br>'
+                'Ex: <code>5531996070871</code> → <b>31996070871</b>'
+                '</div>'
+            )
+            with ui.column().classes("glass-card w-full gap-4"):
+                ui.html('<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;">Números com DDI 55</div>')
+                ddi_input = (
+                    ui.textarea(label=" ")
+                    .classes("w-full list-area")
+                    .props("outlined")
+                    .style("min-height:220px;")
+                )
+                ddi_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 5531996070871"')
+                with ui.row().classes("items-center gap-3"):
+                    btn_ddi_run   = ui.button("📵  Remover DDI 55").classes("btn-ddi")
+                    btn_ddi_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+            ddi_result_area = ui.column().classes("w-full")
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — navegação entre abas
+    # ══════════════════════════════════════════════
+
+    all_panels = [panel_procv, panel_ext, panel_zero, panel_ddi]
+    all_tabs   = [tab_procv, tab_ext, tab_zero, tab_ddi]
+    tab_classes = ["active-procv", "active-ext", "active-zero", "active-ddi"]
+
+    def show_tab(idx):
+        for i, (panel, tab, cls) in enumerate(zip(all_panels, all_tabs, tab_classes)):
+            panel.set_visibility(i == idx)
+            if i == idx:
+                tab.classes(add=cls)
+            else:
+                for c in tab_classes:
+                    tab.classes(remove=c)
+
+    tab_procv.on_click(lambda: show_tab(0))
+    tab_ext.on_click(lambda: show_tab(1))
+    tab_zero.on_click(lambda: show_tab(2))
+    tab_ddi.on_click(lambda: show_tab(3))
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — PROCV
+    # ══════════════════════════════════════════════
 
     async def on_procv():
         text_a = (lista_a.value or "").strip()
@@ -408,9 +748,9 @@ def main_page():
             ui.notify("Insira pelo menos uma lista!", type="warning", position="top")
             return
 
-        btn.disable()
-        result_area.clear()
-        with result_area:
+        btn_procv.disable()
+        procv_result_area.clear()
+        with procv_result_area:
             ui.html('<div class="loading-row"><div>Processando comparação…</div></div>')
 
         result = comparar(text_a, text_b)
@@ -428,8 +768,8 @@ def main_page():
             "titulo_col_b": titulo_b,
         })
 
-        result_area.clear()
-        with result_area:
+        procv_result_area.clear()
+        with procv_result_area:
             with ui.row().classes("w-full gap-5"):
                 # Card A
                 with ui.element('div').classes("res-card res-card-a"):
@@ -440,7 +780,7 @@ def main_page():
                         itens_html = "".join(f'<div class="res-item">{item}</div>' for item in result["apenas_em_a"])
                         ui.html(f'<div class="res-list">{itens_html}</div>')
                         copy_a.on_click(lambda _, items=result["apenas_em_a"]: (
-                            ui.run_javascript(f'navigator.clipboard.writeText({json.dumps(chr(10).join(items))})'),
+                            ui.run_javascript(js_copy(items)),
                             ui.notify("Copiado!", type="positive", position="top")
                         ))
                     else:
@@ -456,15 +796,176 @@ def main_page():
                         itens_html = "".join(f'<div class="res-item">{item}</div>' for item in result["apenas_em_b"])
                         ui.html(f'<div class="res-list">{itens_html}</div>')
                         copy_b.on_click(lambda _, items=result["apenas_em_b"]: (
-                            ui.run_javascript(f'navigator.clipboard.writeText({json.dumps(chr(10).join(items))})'),
+                            ui.run_javascript(js_copy(items)),
                             ui.notify("Copiado!", type="positive", position="top")
                         ))
                     else:
                         ui.html('<div class="empty-state">✓ Todos os itens estão presentes</div>')
                         copy_b.props("disabled")
 
-        btn.enable()
+        btn_procv.enable()
         ui.notify("✅ PROCV concluído com sucesso!", type="positive", position="top")
+
+    def on_procv_clear():
+        nome_a.set_value("")
+        nome_b.set_value("")
+        lista_a.set_value("")
+        lista_b.set_value("")
+        procv_result_area.clear()
+        ui.notify("Tudo limpo!", position="top")
+
+    btn_procv.on_click(on_procv)
+    btn_procv_clear.on_click(on_procv_clear)
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — EXTRATOR DE VÍRGULA
+    # ══════════════════════════════════════════════
+
+    def on_extrator():
+        raw = (ext_input.value or "").strip()
+        if not raw:
+            ui.notify("Cole os dados primeiro!", type="warning", position="top")
+            return
+
+        resultados, erros = extrair_virgula(raw)
+        ext_result_area.clear()
+
+        with ext_result_area:
+            with ui.element('div').classes("toolkit-result"):
+                with ui.element('div').classes("toolkit-result-header"):
+                    ui.html(f'<span class="res-label-ext">✂️ VALORES EXTRAÍDOS</span>')
+                    with ui.row().classes("items-center gap-2"):
+                        ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
+                        if resultados:
+                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy.on_click(lambda _, r=resultados: (
+                                ui.run_javascript(js_copy(r)),
+                                ui.notify("Copiado!", type="positive", position="top")
+                            ))
+
+                with ui.element('div').classes("toolkit-result-body"):
+                    if resultados:
+                        for item in resultados:
+                            ui.html(f'<div>{item}</div>')
+                    else:
+                        ui.html('<div class="empty-state">Nenhum valor extraído.</div>')
+
+                if erros:
+                    ui.html(f'<div style="padding:8px 18px 12px;"><span class="warn-tag">⚠️ {len(erros)} linha(s) sem vírgula foram ignoradas</span></div>')
+
+        if resultados:
+            ui.notify(f"✅ {len(resultados)} valor(es) extraído(s)!", type="positive", position="top")
+        if erros:
+            ui.notify(f"⚠️ {len(erros)} linha(s) sem vírgula ignoradas", type="warning", position="top")
+
+    def on_ext_clear():
+        ext_input.set_value("")
+        ext_result_area.clear()
+        ui.notify("Tudo limpo!", position="top")
+
+    btn_ext_run.on_click(on_extrator)
+    btn_ext_clear.on_click(on_ext_clear)
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — ADICIONAR / REMOVER ZERO
+    # ══════════════════════════════════════════════
+
+    def on_zero(modo: str):
+        raw = (zero_input.value or "").strip()
+        if not raw:
+            ui.notify("Cole os números primeiro!", type="warning", position="top")
+            return
+
+        resultados = processar_zero(raw, modo)
+        zero_result_area.clear()
+
+        label_text  = "➕ NÚMEROS COM 0 ADICIONADO" if modo == "add" else "➖ NÚMEROS COM 0 REMOVIDO"
+        label_class = "res-label-add" if modo == "add" else "res-label-rem"
+        msg_ok      = f"✅ 0 {'adicionado' if modo == 'add' else 'removido'} em {len(resultados)} número(s)!"
+
+        with zero_result_area:
+            with ui.element('div').classes("toolkit-result"):
+                with ui.element('div').classes("toolkit-result-header"):
+                    ui.html(f'<span class="{label_class}">{label_text}</span>')
+                    with ui.row().classes("items-center gap-2"):
+                        ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
+                        if resultados:
+                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy.on_click(lambda _, r=resultados: (
+                                ui.run_javascript(js_copy(r)),
+                                ui.notify("Copiado!", type="positive", position="top")
+                            ))
+
+                with ui.element('div').classes("toolkit-result-body"):
+                    if resultados:
+                        for item in resultados:
+                            ui.html(f'<div>{item}</div>')
+                    else:
+                        ui.html('<div class="empty-state">Nenhum número processado.</div>')
+
+        ui.notify(msg_ok, type="positive", position="top")
+
+    def on_zero_clear():
+        zero_input.set_value("")
+        zero_result_area.clear()
+        ui.notify("Tudo limpo!", position="top")
+
+    btn_add_zero.on_click(lambda: on_zero("add"))
+    btn_rem_zero.on_click(lambda: on_zero("rem"))
+    btn_zero_clear.on_click(on_zero_clear)
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — REMOVER DDI 55
+    # ══════════════════════════════════════════════
+
+    def on_ddi():
+        raw = (ddi_input.value or "").strip()
+        if not raw:
+            ui.notify("Cole os números primeiro!", type="warning", position="top")
+            return
+
+        resultados, sem_55 = remover_ddi55(raw)
+        ddi_result_area.clear()
+
+        with ddi_result_area:
+            with ui.element('div').classes("toolkit-result"):
+                with ui.element('div').classes("toolkit-result-header"):
+                    ui.html('<span class="res-label-ddi">📵 NÚMEROS SEM DDI 55</span>')
+                    with ui.row().classes("items-center gap-2"):
+                        ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
+                        if resultados:
+                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy.on_click(lambda _, r=resultados: (
+                                ui.run_javascript(js_copy(r)),
+                                ui.notify("Copiado!", type="positive", position="top")
+                            ))
+
+                with ui.element('div').classes("toolkit-result-body"):
+                    if resultados:
+                        for item in resultados:
+                            ui.html(f'<div>{item}</div>')
+                    else:
+                        ui.html('<div class="empty-state">Nenhum número processado.</div>')
+
+                if sem_55:
+                    ui.html(f'<div style="padding:8px 18px 12px;"><span class="warn-tag">⚠️ {sem_55} número(s) não tinham o prefixo 55</span></div>')
+
+        if sem_55:
+            ui.notify(f"⚠️ {sem_55} número(s) sem o prefixo 55", type="warning", position="top")
+        else:
+            ui.notify(f"✅ DDI 55 removido de {len(resultados)} número(s)!", type="positive", position="top")
+
+    def on_ddi_clear():
+        ddi_input.set_value("")
+        ddi_result_area.clear()
+        ui.notify("Tudo limpo!", position="top")
+
+    btn_ddi_run.on_click(on_ddi)
+    btn_ddi_clear.on_click(on_ddi_clear)
+
+    # ══════════════════════════════════════════════
+    #  LÓGICA — Tema claro/escuro
+    # ══════════════════════════════════════════════
 
     def toggle_theme():
         ui.run_javascript("""
@@ -476,17 +977,6 @@ def main_page():
         """)
 
     toggle_btn.on_click(toggle_theme)
-
-    def on_clear():
-        nome_a.set_value("")
-        nome_b.set_value("")
-        lista_a.set_value("")
-        lista_b.set_value("")
-        result_area.clear()
-        ui.notify("Tudo limpo!", position="top")
-
-    btn_clear.on_click(on_clear)
-    btn.on_click(on_procv)
 
 
 # ══════════════════════════════════════════════
@@ -659,7 +1149,7 @@ def admin_page():
 ui.run(
     host="0.0.0.0",
     port=int(os.environ.get("PORT", 8080)),
-    title="PROCV – Comparador de Listas",
+    title="PROCV – Toolkit",
     favicon="⚡",
     dark=True,
     reload=False,
