@@ -661,7 +661,6 @@ def main_page():
                     .props("outlined")
                     .style("min-height:220px;")
                 )
-                ext_input.props('placeholder="Cole aqui seus dados, um por linha...\nEx: 99999,0319,99999"')
                 with ui.row().classes("items-center gap-3"):
                     btn_ext_run   = ui.button("Extrair", icon="content_cut").classes("btn-ext")
                     btn_ext_clear = ui.button("Limpar", icon="close").classes("action-btn btn-clear")
@@ -683,7 +682,6 @@ def main_page():
                     .props("outlined")
                     .style("min-height:220px;")
                 )
-                zero_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 31996070871"')
                 with ui.row().classes("items-center gap-3"):
                     btn_add_zero  = ui.button("Adicionar 0", icon="add").classes("btn-add-zero")
                     btn_rem_zero  = ui.button("Remover 0", icon="remove").classes("btn-rem-zero")
@@ -706,7 +704,6 @@ def main_page():
                     .props("outlined")
                     .style("min-height:220px;")
                 )
-                ddi_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 5531996070871"')
                 with ui.row().classes("items-center gap-3"):
                     btn_ddi_run   = ui.button("Remover DDI 55", icon="phone_disabled").classes("btn-ddi")
                     btn_ddi_clear = ui.button("Limpar", icon="close").classes("action-btn btn-clear")
