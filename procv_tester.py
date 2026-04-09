@@ -585,11 +585,11 @@ def main_page():
             with ui.row().classes("items-center gap-3"):
                 # Nav tabs
                 with ui.element('div').classes("nav-tabs"):
-                    tab_procv = ui.button("⚡ PROCV").classes("nav-tab active-procv")
-                    tab_ext   = ui.button("✂️ Extrator").classes("nav-tab")
-                    tab_zero  = ui.button("0  +/- Zero").classes("nav-tab")
-                    tab_ddi   = ui.button("📵 DDI 55").classes("nav-tab")
-                toggle_btn = ui.button("☀️").classes("theme-toggle")
+                    tab_procv = ui.button("PROCV", icon="bolt").classes("nav-tab active-procv")
+                    tab_ext   = ui.button("Extrator", icon="content_cut").classes("nav-tab")
+                    tab_zero  = ui.button("+/- Zero", icon="exposure_zero").classes("nav-tab")
+                    tab_ddi   = ui.button("DDI 55", icon="phone_disabled").classes("nav-tab")
+                toggle_btn = ui.button("", icon="light_mode").classes("theme-toggle")
 
         # ── Panels container ──────────────────────────
         main_content = ui.column().classes("w-full").style(
@@ -639,8 +639,8 @@ def main_page():
 
             with ui.element('div').classes("procv-btn-wrap w-full"):
                 with ui.row().classes("items-center gap-4"):
-                    btn_procv_clear = ui.button("✕  Limpar tudo").classes("action-btn btn-clear")
-                    btn_procv = ui.button("⚡  PROCV").classes("btn-procv")
+                    btn_procv_clear = ui.button("Limpar tudo", icon="close").classes("action-btn btn-clear")
+                    btn_procv = ui.button("PROCV", icon="bolt").classes("btn-procv")
 
             procv_result_area = ui.column().classes("w-full")
 
@@ -663,8 +663,8 @@ def main_page():
                 )
                 ext_input.props('placeholder="Cole aqui seus dados, um por linha...\nEx: 99999,0319,99999"')
                 with ui.row().classes("items-center gap-3"):
-                    btn_ext_run   = ui.button("✂️  Extrair").classes("btn-ext")
-                    btn_ext_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+                    btn_ext_run   = ui.button("Extrair", icon="content_cut").classes("btn-ext")
+                    btn_ext_clear = ui.button("Limpar", icon="close").classes("action-btn btn-clear")
             ext_result_area = ui.column().classes("w-full")
 
         # ── ZERO content ──────────────────────────────
@@ -685,9 +685,9 @@ def main_page():
                 )
                 zero_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 31996070871"')
                 with ui.row().classes("items-center gap-3"):
-                    btn_add_zero  = ui.button("➕  Adicionar 0").classes("btn-add-zero")
-                    btn_rem_zero  = ui.button("➖  Remover 0").classes("btn-rem-zero")
-                    btn_zero_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+                    btn_add_zero  = ui.button("Adicionar 0", icon="add").classes("btn-add-zero")
+                    btn_rem_zero  = ui.button("Remover 0", icon="remove").classes("btn-rem-zero")
+                    btn_zero_clear = ui.button("Limpar", icon="close").classes("action-btn btn-clear")
             zero_result_area = ui.column().classes("w-full")
 
         # ── DDI 55 content ────────────────────────────
@@ -708,8 +708,8 @@ def main_page():
                 )
                 ddi_input.props('placeholder="Cole os números aqui, um por linha...\nEx: 5531996070871"')
                 with ui.row().classes("items-center gap-3"):
-                    btn_ddi_run   = ui.button("📵  Remover DDI 55").classes("btn-ddi")
-                    btn_ddi_clear = ui.button("✕  Limpar").classes("action-btn btn-clear")
+                    btn_ddi_run   = ui.button("Remover DDI 55", icon="phone_disabled").classes("btn-ddi")
+                    btn_ddi_clear = ui.button("Limpar", icon="close").classes("action-btn btn-clear")
             ddi_result_area = ui.column().classes("w-full")
 
     # ══════════════════════════════════════════════
@@ -833,11 +833,11 @@ def main_page():
         with ext_result_area:
             with ui.element('div').classes("toolkit-result"):
                 with ui.element('div').classes("toolkit-result-header"):
-                    ui.html(f'<span class="res-label-ext">✂️ VALORES EXTRAÍDOS</span>')
+                    ui.html(f'<span class="res-label-ext">VALORES EXTRAIDOS</span>')
                     with ui.row().classes("items-center gap-2"):
                         ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
                         if resultados:
-                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy = ui.button("Copiar tudo", icon="content_copy").classes("action-btn btn-copy").props("dense")
                             btn_copy.on_click(lambda _, r=resultados: (
                                 ui.run_javascript(js_copy(r)),
                                 ui.notify("Copiado!", type="positive", position="top")
@@ -879,7 +879,7 @@ def main_page():
         resultados = processar_zero(raw, modo)
         zero_result_area.clear()
 
-        label_text  = "➕ NÚMEROS COM 0 ADICIONADO" if modo == "add" else "➖ NÚMEROS COM 0 REMOVIDO"
+        label_text  = "NUMEROS COM 0 ADICIONADO" if modo == "add" else "NUMEROS COM 0 REMOVIDO"
         label_class = "res-label-add" if modo == "add" else "res-label-rem"
         msg_ok      = f"✅ 0 {'adicionado' if modo == 'add' else 'removido'} em {len(resultados)} número(s)!"
 
@@ -890,7 +890,7 @@ def main_page():
                     with ui.row().classes("items-center gap-2"):
                         ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
                         if resultados:
-                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy = ui.button("Copiar tudo", icon="content_copy").classes("action-btn btn-copy").props("dense")
                             btn_copy.on_click(lambda _, r=resultados: (
                                 ui.run_javascript(js_copy(r)),
                                 ui.notify("Copiado!", type="positive", position="top")
@@ -930,11 +930,11 @@ def main_page():
         with ddi_result_area:
             with ui.element('div').classes("toolkit-result"):
                 with ui.element('div').classes("toolkit-result-header"):
-                    ui.html('<span class="res-label-ddi">📵 NÚMEROS SEM DDI 55</span>')
+                    ui.html('<span class="res-label-ddi">NUMEROS SEM DDI 55</span>')
                     with ui.row().classes("items-center gap-2"):
                         ui.html(f'<span class="count-badge">{len(resultados)} item(s)</span>')
                         if resultados:
-                            btn_copy = ui.button("📋 Copiar tudo", icon="").classes("action-btn btn-copy").props("dense")
+                            btn_copy = ui.button("Copiar tudo", icon="content_copy").classes("action-btn btn-copy").props("dense")
                             btn_copy.on_click(lambda _, r=resultados: (
                                 ui.run_javascript(js_copy(r)),
                                 ui.notify("Copiado!", type="positive", position="top")
@@ -971,8 +971,8 @@ def main_page():
         ui.run_javascript("""
             const body = document.body;
             const isLight = body.classList.toggle('light');
-            document.querySelectorAll('.theme-toggle').forEach(b => {
-                b.textContent = isLight ? '🌙' : '☀️';
+            document.querySelectorAll('.theme-toggle .q-icon').forEach(b => {
+                b.textContent = isLight ? 'dark_mode' : 'light_mode';
             });
         """)
 
