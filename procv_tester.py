@@ -370,9 +370,9 @@ GLOBAL_CSS = """
   .q-field--outlined.q-field--focused .q-field__control { border-color: rgba(96,165,250,0.7) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important; }
   .q-field__native, .q-field__input { font-family: 'Plus Jakarta Sans', sans-serif !important; color: var(--text) !important; }
   .q-field__label { color: var(--text-muted) !important; }
-  .list-area textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 13px !important; line-height: 1.8 !important; color: var(--field-text) !important; padding-left: 6px !important; background: var(--input-bg) !important; }
+  .list-area textarea { font-family: 'JetBrains Mono', monospace !important; font-size: 13px !important; line-height: 1.8 !important; color: var(--field-text) !important; padding-left: 12px !important; background: var(--input-bg) !important; }
   .list-area .q-field__control { padding-left: 0 !important; }
-  .name-input .q-field__native { padding-left: 6px !important; }
+  .name-input .q-field__native { padding-left: 12px !important; }
 
   /* Light mode: stronger borders */
   body.light .q-field--outlined .q-field__control { border-color: #b0bec5 !important; }
